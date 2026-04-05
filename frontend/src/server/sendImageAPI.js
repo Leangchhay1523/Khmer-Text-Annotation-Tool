@@ -1,5 +1,4 @@
 import { apiRequest } from "@/lib/api";
-import { getAuthToken } from "@/lib/authUtils";
 
 const BACKEND_UPLOAD_URL = `${import.meta.env.VITE_BACKEND_BASE_ENDPOINT}/images/upload`;
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_ENDPOINT;
@@ -16,13 +15,9 @@ export const uploadImages = async (projectId, files, annotations) => {
   console.log("upload to project", files, projectId);
   console.log("data annotation go to", annotations);
 
-  const token = getAuthToken();
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
   const res = await fetch(BACKEND_UPLOAD_URL, {
     method: "POST",
     body: formData,
-    headers,
   });
   try {
     if (!res.ok) {
@@ -46,14 +41,10 @@ export const uploadImages = async (projectId, files, annotations) => {
 export const triggerOCR = async (imageId, boxes, { recognitionModel = "tesseract" } = {}) => {
   if (!imageId) return null;
 
-  const token = getAuthToken();
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
   try {
     const res = await apiRequest(`/images/${imageId}/ocr`, {
       method: "POST",
       body: JSON.stringify({ annotations: boxes, recognition_model: recognitionModel }),
-      headers,
     });
 
     if (!res.ok) {
@@ -77,9 +68,6 @@ export const triggerOCR = async (imageId, boxes, { recognitionModel = "tesseract
 export const triggerAutoDetect = async (imageId, { mode = "word", extractText = false, detectionModel = "doctr", recognitionModel = "tesseract" } = {}) => {
   if (!imageId) return null;
 
-  const token = getAuthToken();
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
   try {
     const res = await apiRequest(`/images/${imageId}/auto-detect`, {
       method: "POST",
@@ -89,7 +77,6 @@ export const triggerAutoDetect = async (imageId, { mode = "word", extractText = 
         detection_model: detectionModel,
         recognition_model: recognitionModel,
       }),
-      headers,
     });
 
     if (!res.ok) {

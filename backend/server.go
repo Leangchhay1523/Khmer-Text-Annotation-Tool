@@ -8,17 +8,13 @@ import (
 	"time"
 
 	"backend/cloudflare"
-	"backend/middleware"
 	"backend/routes"
 
-	firebase "firebase.google.com/go"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"google.golang.org/api/option"
 )
 
 func main() {
@@ -34,9 +30,6 @@ func main() {
 	mongoClient := initMongoDB(config)
 	defer disconnectMongoDB(mongoClient)
 
-	// Initialize Firebase authentication
-	firebaseAuth := initFirebase()
-
 	// Initialize Cloudflare R2 client
 	r2Client, err := cloudflare.NewR2Client()
 	if err != nil {
@@ -47,12 +40,6 @@ func main() {
 	db := mongoClient.Database(config.MongoDBName)
 	imageCollection := db.Collection(config.ImageCollection)
 	projectCollection := db.Collection(config.ProjectCollection)
-	userCollection := db.Collection(config.UserCollection)
-
-	// Initialize user collection with indexes
-	if err := initializeUserCollection(userCollection); err != nil {
-		log.Fatalf("Failed to initialize user collection: %v", err)
-	}
 
 	// Initialize Gin router
 	router := gin.Default()
@@ -61,7 +48,7 @@ func main() {
 	setupMiddleware(router, config)
 
 	// Setup all routes
-	setupRoutes(router, firebaseAuth, imageCollection, projectCollection, userCollection, r2Client)
+	setupRoutes(router, imageCollection, projectCollection, r2Client)
 
 	// Start server
 	log.Printf("Server starting on port %s", config.Port)
@@ -76,7 +63,6 @@ type Config struct {
 	MongoDBName       string
 	ImageCollection   string
 	ProjectCollection string
-	UserCollection    string
 	CORSOrigin        string
 	Port              string
 }
@@ -88,7 +74,6 @@ func loadConfig() Config {
 		MongoDBName:       os.Getenv("MONGODB_DB"),
 		ImageCollection:   os.Getenv("IMAGE_COLLECTION"),
 		ProjectCollection: os.Getenv("PROJECT_COLLECTION"),
-		UserCollection:    getEnvOrDefault("USER_COLLECTION", "users"),
 		CORSOrigin:        os.Getenv("CORS_ORIGIN"),
 		Port:              os.Getenv("PORT"),
 	}
@@ -160,89 +145,31 @@ func disconnectMongoDB(client *mongo.Client) {
 	log.Println("MongoDB disconnected successfully")
 }
 
-// initFirebase initializes Firebase authentication client
-func initFirebase() *firebase.App {
-	opt := option.WithCredentialsFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
-	firebaseApp, err := firebase.NewApp(context.Background(), nil, opt)
-	if err != nil {
-		log.Fatalf("Failed to initialize Firebase app: %v", err)
-	}
-
-	log.Println("Firebase initialized successfully")
-	return firebaseApp
-}
-
 // setupMiddleware configures all middleware including CORS
 func setupMiddleware(router *gin.Engine, config Config) {
 	// Configure CORS middleware
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{config.CORSOrigin},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
 }
 
 // setupRoutes registers all application routes
-func setupRoutes(router *gin.Engine, firebaseApp *firebase.App, imageCollection, projectCollection, userCollection *mongo.Collection, r2Client *cloudflare.R2Client) {
-	// Get Firebase Auth client
-	firebaseAuth, err := firebaseApp.Auth(context.Background())
-	if err != nil {
-		log.Fatalf("Failed to get Firebase Auth client: %v", err)
-	}
-
+func setupRoutes(router *gin.Engine, imageCollection, projectCollection *mongo.Collection, r2Client *cloudflare.R2Client) {
 	// API routes - prefixed with /api
 	log.Println("Setting up API routes")
 	api := router.Group("/api")
 	{
-		// Authentication routes (public endpoints with optional protected endpoint)
-		log.Println("Setting up authentication routes")
-		routes.AuthRoutes(api, firebaseAuth, userCollection)
+		// Project management routes
+		routes.ProjectRoutes(api, projectCollection, imageCollection)
 
-		// Protected routes - require Firebase authentication
-		log.Println("Setting up protected routes (authenticated)")
-		protected := api.Group("")
-		protected.Use(middleware.FirebaseAuthMiddleware(firebaseAuth))
-		{
-			// User profile routes
-			routes.UserRoutes(protected, userCollection, r2Client)
+		// Image upload and annotation routes
+		routes.ImageRoutes(api, imageCollection, r2Client)
 
-			// Project management routes
-			routes.ProjectRoutes(protected, projectCollection, imageCollection)
-
-			// Image upload and annotation routes (requires R2 client)
-			routes.ImageRoutes(protected, imageCollection, r2Client)
-
-			// Result/annotation retrieval routes
-			routes.ResultRoutes(protected, imageCollection)
-		}
+		// Result/annotation retrieval routes
+		routes.ResultRoutes(api, imageCollection)
 	}
-}
-
-// initializeUserCollection creates indexes for the user collection
-func initializeUserCollection(collection *mongo.Collection) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Create unique index on email field
-	emailIndexModel := mongo.IndexModel{
-		Keys:    bson.D{{Key: "email", Value: 1}},
-		Options: options.Index().SetUnique(true),
-	}
-
-	// Create index on firebase_uid field
-	firebaseUIDIndexModel := mongo.IndexModel{
-		Keys: bson.D{{Key: "firebase_uid", Value: 1}},
-	}
-
-	// Create the indexes
-	indexes := []mongo.IndexModel{emailIndexModel, firebaseUIDIndexModel}
-	_, err := collection.Indexes().CreateMany(ctx, indexes)
-	if err != nil {
-		return err
-	}
-
-	log.Println("User collection indexes created successfully")
-	return nil
 }

@@ -1,22 +1,14 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { RiErrorWarningLine } from "react-icons/ri";
 import { FaSortAmountUp, FaHome } from "react-icons/fa";
 import { MdOutlineUploadFile } from "react-icons/md";
-import { TbLogout2 } from "react-icons/tb";
 import { HiMenuAlt3, HiX } from "react-icons/hi";
 import { useState } from "react";
 import NewLogo from "../assets/JomNam_New_Logo1.png";
-import { useAuth } from "@/hooks/useAuth";
 
 const Sidebar = () => {
-  const navigate = useNavigate();
   const [hoveredItem, setHoveredItem] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, logout, isAuthenticated } = useAuth();
-
-  const handleLogin = () => {
-    navigate("/login");
-  };
 
   const navigationItems = [
     { name: "Home", path: "/", icon: FaHome },
@@ -76,48 +68,6 @@ const Sidebar = () => {
                 );
               })}
             </div>
-
-            {/* Profile or Login Section */}
-            {isAuthenticated ? (
-              <div className="relative cursor-pointer group">
-                <NavLink
-                  key={"profile"}
-                  to={"profile"}
-                  className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110 overflow-hidden"
-                >
-                  {user?.photoURL ? (
-                    <img
-                      src={user.photoURL}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Fallback to blue circle if image fails to load
-                        e.target.style.display = "none";
-                        e.target.nextSibling.style.display = "flex";
-                      }}
-                    />
-                  ) : null}
-                  <div
-                    className={`w-full h-full bg-linear-to-br from-blue-400 to-blue-600 flex items-center justify-center ${
-                      user?.photoURL ? "hidden" : "flex"
-                    }`}
-                  >
-                    <span className="text-white font-bold text-lg">
-                      {user?.displayName?.charAt(0)?.toUpperCase() ||
-                        user?.email?.charAt(0)?.toUpperCase() ||
-                        "U"}
-                    </span>
-                  </div>
-                </NavLink>
-              </div>
-            ) : (
-              <button
-                onClick={handleLogin}
-                className="px-5 py-2.5 rounded-md text-sm font-medium text-white bg-linear-to-r from-orange-400 to-orange-500 shadow-md hover:shadow-lg transition-all duration-300"
-              >
-                Login
-              </button>
-            )}
           </div>
         </div>
       </nav>
@@ -153,56 +103,6 @@ const Sidebar = () => {
           }`}
         >
           <div className="px-6 py-4 space-y-3 bg-gray-50 shadow-inner">
-            {/* Profile or Login in Mobile */}
-            {isAuthenticated ? (
-              <div className="flex items-center justify-center pb-4 border-b border-gray-200">
-                <div className="relative">
-                  <NavLink
-                    key={"profile"}
-                    to={"profile"}
-                    className="w-20 h-20 rounded-full flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-110 overflow-hidden"
-                  >
-                    {user?.photoURL ? (
-                      <img
-                        src={user.photoURL}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          // Fallback to blue circle if image fails to load
-                          e.target.style.display = "none";
-                          e.target.nextSibling.style.display = "flex";
-                        }}
-                      />
-                    ) : null}
-                    <div
-                      className={`w-full h-full bg-linear-to-br from-blue-400 to-blue-600 flex items-center justify-center ${
-                        user?.photoURL ? "hidden" : "flex"
-                      }`}
-                    >
-                      <span className="text-white font-bold text-xl">
-                        {user?.displayName?.charAt(0)?.toUpperCase() ||
-                          user?.email?.charAt(0)?.toUpperCase() ||
-                          "U"}
-                      </span>
-                    </div>
-                  </NavLink>
-                  <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-center pb-4 border-b border-gray-200">
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleLogin();
-                  }}
-                  className="px-6 py-2.5 rounded-lg text-base font-medium text-white bg-linear-to-r from-orange-400 to-orange-500 shadow-md hover:shadow-lg transition-all duration-300"
-                >
-                  Login
-                </button>
-              </div>
-            )}
-
             {/* Mobile Navigation Items */}
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
@@ -225,20 +125,6 @@ const Sidebar = () => {
                 </NavLink>
               );
             })}
-
-            {/* Logout Button (only show if logged in) */}
-            {isAuthenticated && (
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  logout();
-                }}
-                className="w-full px-6 py-3 rounded-xl font-medium text-base text-gray-600 hover:bg-white hover:text-red-500 hover:shadow-md transition-all duration-300 flex items-center justify-center space-x-2 mt-4"
-              >
-                <TbLogout2 className="w-5 h-5" />
-                <span>Logout</span>
-              </button>
-            )}
           </div>
         </div>
       </div>

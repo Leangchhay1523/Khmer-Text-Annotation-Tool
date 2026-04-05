@@ -1,8 +1,4 @@
-import { getAuthToken } from "@/lib/authUtils";
-
 export async function apiRequest(endpoint, options = {}) {
-  // Get the Firebase token from localStorage
-  const token = getAuthToken();
   const base = import.meta.env.VITE_BACKEND_BASE_ENDPOINT || "";
 
   // normalize URL parts to avoid double slashes
@@ -19,10 +15,6 @@ export async function apiRequest(endpoint, options = {}) {
     credentials: "include",
     ...options,
   };
-
-  if (token) {
-    defaultOptions.headers["Authorization"] = `Bearer ${token}`;
-  }
 
   try {
     return await fetch(url, defaultOptions);
