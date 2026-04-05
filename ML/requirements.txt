@@ -1,12 +1,28 @@
-pillow 
-numpy 
-ultralytics
-opencv-python
-pytesseract
+# Core Web Framework
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
 httpx
-tesseract
-google-generativeai
+
+# Image Processing
+Pillow
+numpy
+opencv-python
+
+# OCR Engines
+pytesseract
+python-doctr[viz,html,contrib]
+#kiri-ocr  # Uncomment if using KiriOCR for Khmer-specific OCR
+
+# Deep Learning
+torch
+torchvision
+ultralytics  # YOLO object detection
+
+# AI/ML Services
+google-generativeai  # Gemini Vision API
+
+# Utilities
 python-dotenv
+tqdm
+pathlib

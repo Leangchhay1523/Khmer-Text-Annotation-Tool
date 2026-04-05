@@ -1,5 +1,37 @@
 # ML Server - Khmer Data Annotation Tool
 
+Machine Learning service for Khmer text extraction from images using multiple OCR engines.
+
+## Quick Start
+
+### 1. Install Dependencies
+
+```bash
+cd ml
+pip install -r requirements.txt
+```
+
+### 2. Configure Environment
+
+```bash
+copy .env.example .env
+```
+
+Edit `.env` with your Tesseract path and API keys.
+
+### 3. Run Server
+
+```bash
+cd models
+python main.py
+```
+
+Server starts at `http://localhost:8000`
+
+API docs: http://localhost:8000/docs
+
+---
+
 ## Overview
 
 The ML (Machine Learning) server is a Python-based FastAPI service that provides OCR (Optical Character Recognition) capabilities for Khmer text extraction from images. It supports multiple OCR engines and object detection models to accurately identify and extract text regions.
@@ -97,23 +129,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-For model-specific dependencies:
-```bash
-cd models
-pip install -r requirements.txt
-```
+All dependencies are now in a single `requirements.txt` file at the root level.
 
 ### 4. Set Up Environment Variables
 
 Copy `.env.example` to `.env`:
 
 ```bash
-copy .env.example .env
-```
-
-Or from models directory:
-```bash
-cd models
 copy .env.example .env
 ```
 
@@ -310,32 +332,21 @@ FastAPI provides interactive API docs at:
 ## Project Structure
 
 ```
-ML/
-├── .env                           # Environment configuration
-├── requirements.txt               # Root-level dependencies
-│
+ml/
+├── .env                    # Environment configuration (gitignored)
+├── .env.example            # Configuration template
+├── .gitignore
+├── requirements.txt        # Python dependencies (unified)
+├── README.md               # Quick reference guide
 ├── models/
-│   ├── .env.example               # Template environment file
-│   ├── docTR_test.ipynb           # Jupyter notebook for docTR testing
-│   ├── main.py                    # MAIN ENTRY POINT - FastAPI server (1058 lines)
-│   ├── README.md                  # Minimal documentation
-│   ├── requirements.txt           # Model-specific dependencies
-│   ├── test.py                    # Test script
-│   └── images/
-│       ├── demo_hand_written.jpg
-│       ├── demo_img.jpg
-│       └── demo_scene_text.jpeg
-│
+│   └── main.py             # FastAPI server entry point (1058 lines)
 └── utils/
-    ├── GeminiOCR.py               # Gemini Vision API wrapper
-    ├── main.py                    # Empty file (unused)
-    ├── demo_hand_written.jpg
-    ├── demo_scene_text.jpeg
+    ├── GeminiOCR.py        # Gemini Vision API wrapper
     └── YoloKh/
-        ├── __init__.py            # Package init
-        ├── YoloModel.py           # YOLO-based text detector
-        ├── best.pt                # YOLO weights (primary)
-        └── best_V1.pt             # YOLO weights (version 1)
+        ├── __init__.py     # Package init
+        ├── YoloModel.py    # YOLO-based text detector
+        ├── best.pt         # YOLO weights (primary)
+        └── best_V1.pt      # YOLO weights (version 1)
 ```
 
 ## OCR Engines
@@ -471,12 +482,15 @@ WER = (Substitutions + Insertions + Deletions) / Total Words
 ### Testing
 
 ```bash
-# Run test script
+# Test the server
 cd models
-python test.py
+python main.py
 
-# Test with Jupyter notebook
-jupyter notebook docTR_test.ipynb
+# Test Tesseract
+tesseract image.jpg stdout -l khm+eng
+
+# Test YOLO model
+python -c "from utils.YoloKh.YoloModel import YOLODetector; print('YOLO loaded')"
 ```
 
 ### Debugging
